@@ -3,6 +3,7 @@ import User from "../models/userModel.js";
 
 // Register
 const registerUser = asyncHandler(async (req, res) => {
+  console.log("Register route called");
   const { name, email, password, role } = req.body;
   const existedUser = await User.findOne({ email });
 
@@ -22,12 +23,16 @@ const registerUser = asyncHandler(async (req, res) => {
   });
 
   if (user) {
-    res.status(201).json({
+    const userData = {
       _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
       image: user.image,
+    };
+    res.status(200).json({
+      message: "Registration success!",
+      user: userData,
     });
   } else {
     res.status(400);
@@ -43,13 +48,14 @@ const loginUser = asyncHandler(async (req, res) => {
 
   if (user) {
     if (user && (await user.matchPassword(password))) {
-      res.status(200).json({
+      const userData = {
         _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
         image: user.image,
-      });
+      };
+      res.status(200).json({ message: "Logged in!", user: userData });
     } else {
       res.status(401).json({ message: "Invalid credential" });
     }
