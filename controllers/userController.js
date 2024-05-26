@@ -4,12 +4,36 @@ import User from "../models/userModel.js";
 // Register
 const registerUser = asyncHandler(async (req, res) => {
   console.log("Register route called");
-  const { name, email, password, role } = req.body;
-  const existedUser = await User.findOne({ email });
+  const { name, email, password, employeeID } = req.body;
 
+  // Determine the role based on the employeeID prefix
+  let role;
+  if (employeeID.length == 6) {
+    if (employeeID.startsWith("HA")) {
+      role = "headAdmin";
+    } else if (employeeID.startsWith("MA")) {
+      role = "managerAdmin";
+    } else if (employeeID.startsWith("CA")) {
+      role = "cashierAdmin";
+    } else if (employeeID.startsWith("PA")) {
+      role = "pharmacistAdmin";
+    } else {
+      return res.status(400).json({ message: "Invalid employeeID prefix" });
+    }
+  } else {
+    return res.status(400).json({ message: "Invalid employeeID prefix" });
+  }
+
+  // Check for existing user with email
+  const existedUser = await User.findOne({ email });
   if (existedUser) {
-    res.status(400);
-    throw new Error("User already exists");
+    return res.status(400).json({ message: "Email already exists" });
+  }
+
+  // Check for existing user with employeeID
+  const existedUserWithEmployeeID = await User.findOne({ employeeID });
+  if (existedUserWithEmployeeID) {
+    return res.status(400).json({ message: "Employee ID already exists" });
   }
 
   const image = req.file ? req.file.filename : null;
@@ -18,6 +42,7 @@ const registerUser = asyncHandler(async (req, res) => {
     name,
     email,
     password,
+    employeeID,
     role,
     image,
   });
@@ -28,6 +53,7 @@ const registerUser = asyncHandler(async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      employeeID: user.employeeID,
       image: user.image,
     };
     res.status(200).json({
@@ -53,6 +79,7 @@ const loginUser = asyncHandler(async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        employeeID: user.employeeID,
         image: user.image,
       };
       res.status(200).json({ message: "Logged in!", user: userData });
@@ -67,14 +94,27 @@ const loginUser = asyncHandler(async (req, res) => {
 // Get all users
 const getUsers = asyncHandler(async (req, res) => {
   const users = await User.find();
-  res.json(users);
+  if (users) {
+    res.status(200).json({ users });
+  } else {
+    res.status(404).json({ message: "No users found" });
+  }
 });
 
 // Get user by id
 const getUser = asyncHandler(async (req, res) => {
+  console.log("Fetched user");
   const user = await User.findById(req.params.id);
   if (user) {
-    res.status(201).json(user);
+    const userData = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      employeeID: user.employeeID,
+      image: user.image,
+    };
+    res.status(200).json({ user: userData });
   } else {
     res.status(404).json({ message: "User not found" });
   }
@@ -83,11 +123,11 @@ const getUser = asyncHandler(async (req, res) => {
 // Update user by id
 const updateUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id);
-
   if (user) {
     user.name = req.body.name || user.name;
     user.email = req.body.email || user.email;
     user.role = req.body.role || user.role;
+    user.employeeID = req.body.employeeID || user.employeeID;
     if (req.body.password) {
       user.password = req.body.password;
     }
@@ -95,14 +135,15 @@ const updateUser = asyncHandler(async (req, res) => {
       user.image = req.file.filename;
     }
     const updateUser = await user.save();
-
-    res.status(200).json({
+    const userData = {
       _id: updateUser._id,
       name: updateUser.name,
       email: updateUser.email,
       role: updateUser.role,
       image: updateUser.image,
-    });
+    };
+
+    res.status(200).json({ message: "User updated", user: userData });
   } else {
     res.status(404).json({ message: "User not found" });
   }
