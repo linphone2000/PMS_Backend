@@ -3,7 +3,6 @@ import User from "../models/userModel.js";
 
 // Register
 const registerUser = asyncHandler(async (req, res) => {
-  console.log("Register route called");
   const { name, email, password, employeeID } = req.body;
 
   // Determine the role based on the employeeID prefix
@@ -103,7 +102,6 @@ const getUsers = asyncHandler(async (req, res) => {
 
 // Get user by id
 const getUser = asyncHandler(async (req, res) => {
-  console.log("Fetched user");
   const user = await User.findById(req.params.id);
   if (user) {
     const userData = {
