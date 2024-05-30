@@ -1,4 +1,20 @@
+// orderModel.js
+
 import mongoose from "mongoose";
+
+const itemSchema = mongoose.Schema(
+  {
+    itemID: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "Inventory",
+    },
+    itemName: { type: String, required: true },
+    quantity: { type: Number, required: true },
+    price: { type: Number, required: true },
+  },
+  { _id: false }
+);
 
 const orderSchema = mongoose.Schema(
   {
@@ -7,13 +23,7 @@ const orderSchema = mongoose.Schema(
       required: true,
       ref: "Customer",
     },
-    items: [
-      {
-        itemName: { type: String, required: true },
-        quantity: { type: Number, required: true },
-        price: { type: Number, required: true },
-      },
-    ],
+    items: [itemSchema],
     totalPrice: {
       type: Number,
       required: true,
@@ -25,7 +35,6 @@ const orderSchema = mongoose.Schema(
     paymentMethod: {
       type: String,
       required: true,
-      enum: ["Cash", "Credit Card", "Debit Card", "Online"],
     },
     deliveryAddress: {
       type: String,
@@ -33,6 +42,11 @@ const orderSchema = mongoose.Schema(
     },
     remarks: {
       type: String,
+    },
+    status: {
+      type: String,
+      enum: ["Pending", "Delivered", "Cancelled"],
+      default: "Pending",
     },
   },
   {

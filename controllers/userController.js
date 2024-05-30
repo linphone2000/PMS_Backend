@@ -120,13 +120,32 @@ const getUser = asyncHandler(async (req, res) => {
 
 // Update user by id
 const updateUser = asyncHandler(async (req, res) => {
-
   const user = await User.findById(req.params.id);
   if (user) {
     user.name = req.body.name || user.name;
     user.email = req.body.email || user.email;
-    user.role = req.body.role || user.role;
     user.employeeID = req.body.employeeID || user.employeeID;
+
+    // Determine the role based on the employeeID prefix
+    let role;
+    if (user.employeeID.length == 6) {
+      if (user.employeeID.startsWith("HA")) {
+        role = "headAdmin";
+      } else if (user.employeeID.startsWith("MA")) {
+        role = "managerAdmin";
+      } else if (user.employeeID.startsWith("CA")) {
+        role = "cashierAdmin";
+      } else if (user.employeeID.startsWith("PA")) {
+        role = "pharmacistAdmin";
+      } else {
+        return res.status(400).json({ message: "Invalid employeeID prefix" });
+      }
+    } else {
+      return res.status(400).json({ message: "Invalid employeeID prefix" });
+    }
+
+    user.role = role || user.role;
+
     if (req.body.password) {
       user.password = req.body.password;
     }

@@ -8,6 +8,8 @@ import connectDB from "./config/db.js";
 import userRoute from "./routes/userRoutes.js";
 import supplierRoutes from "./routes/supplierRoutes.js";
 import inventoryRoutes from "./routes/inventoryRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
+import customerRoutes from "./routes/customerRoutes.js";
 // import { errorHandler } from './middleware/errorMiddleware.js';
 
 // env and db
@@ -25,6 +27,8 @@ app.use("/uploads", express.static("uploads"));
 app.use("/api/users", userRoute);
 app.use("/api/suppliers", supplierRoutes);
 app.use("/api/inventory", inventoryRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/customers", customerRoutes);
 
 // app.use(errorHandler);
 
