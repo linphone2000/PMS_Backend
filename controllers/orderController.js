@@ -84,7 +84,6 @@ const getOrderById = asyncHandler(async (req, res) => {
   }
 });
 
-// Update order
 const updateOrder = asyncHandler(async (req, res) => {
   const { status, items, totalPrice, paymentMethod, deliveryAddress, remarks } =
     req.body;
@@ -94,6 +93,7 @@ const updateOrder = asyncHandler(async (req, res) => {
   if (order) {
     const oldStatus = order.status;
 
+    // Update order details
     order.status = status || order.status;
     order.items = items || order.items;
     order.totalPrice = totalPrice || order.totalPrice;
@@ -101,7 +101,7 @@ const updateOrder = asyncHandler(async (req, res) => {
     order.deliveryAddress = deliveryAddress || order.deliveryAddress;
     order.remarks = remarks || order.remarks;
 
-    // Handle item quantity dedution
+    // Handle item quantity addition if the order is cancelled
     if (oldStatus === "Pending" && status === "Cancelled") {
       for (const item of order.items) {
         const inventoryItem = await Inventory.findById(item.itemID);
@@ -112,13 +112,15 @@ const updateOrder = asyncHandler(async (req, res) => {
       }
     }
 
-    // Handle item quantity addition
-    if (items) {
-      for (const item of items) {
+    // Handle item quantity deduction if the order is pending
+    if (oldStatus === "Cancelled" && status === "Pending") {
+      for (const item of order.items) {
         const inventoryItem = await Inventory.findById(item.itemID);
         if (inventoryItem) {
           if (inventoryItem.quantity < item.quantity) {
-            res.status(400).json({message:`Insufficient quantity for item: ${inventoryItem.itemName}`});
+            res.status(400).json({
+              message: `Insufficient quantity for item: ${inventoryItem.itemName}`,
+            });
             throw new Error(
               `Insufficient quantity for item: ${inventoryItem.itemName}`
             );
@@ -126,7 +128,7 @@ const updateOrder = asyncHandler(async (req, res) => {
           inventoryItem.quantity -= item.quantity;
           await inventoryItem.save();
         } else {
-          res.status(404);
+          res.status(404).json({ message: `Item not found: ${item.itemName}` });
           throw new Error(`Item not found: ${item.itemName}`);
         }
       }
@@ -135,7 +137,7 @@ const updateOrder = asyncHandler(async (req, res) => {
     const updatedOrder = await order.save();
     res.json(updatedOrder);
   } else {
-    res.status(404);
+    res.status(404).json({ message: "Order not found" });
     throw new Error("Order not found");
   }
 });
@@ -146,7 +148,7 @@ const deleteOrder = asyncHandler(async (req, res) => {
 
   if (order) {
     // Handle item quantity addition
-    if (order.status !== "Delivered") {
+    if (order.status == "Pending") {
       for (const item of order.items) {
         const inventoryItem = await Inventory.findById(item.itemID);
         if (inventoryItem) {

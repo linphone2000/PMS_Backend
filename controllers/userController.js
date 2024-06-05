@@ -1,5 +1,21 @@
 import asyncHandler from "express-async-handler";
 import User from "../models/userModel.js";
+import bcrypt from "bcryptjs";
+import { sendResetCode } from "../utils/emailService.js";
+
+// OTPs
+const OTPs = [
+  "AS12D",
+  "BC34F",
+  "CD56G",
+  "DE78H",
+  "EF90I",
+  "FG12J",
+  "GH34K",
+  "HI56L",
+  "IJ78M",
+  "JK90N",
+];
 
 // Register
 const registerUser = asyncHandler(async (req, res) => {
@@ -7,7 +23,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   // Determine the role based on the employeeID prefix
   let role;
-  if (employeeID.length == 6) {
+  if (employeeID.length === 6) {
     if (employeeID.startsWith("HA")) {
       role = "headAdmin";
     } else if (employeeID.startsWith("MA")) {
@@ -33,6 +49,16 @@ const registerUser = asyncHandler(async (req, res) => {
   const existedUserWithEmployeeID = await User.findOne({ employeeID });
   if (existedUserWithEmployeeID) {
     return res.status(400).json({ message: "Employee ID already exists" });
+  }
+
+  // Validate password strength
+  const passwordRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  if (!passwordRegex.test(password)) {
+    return res.status(400).json({
+      message:
+        "Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.",
+    });
   }
 
   const image = req.file ? req.file.filename : null;
@@ -178,4 +204,68 @@ const deleteUser = asyncHandler(async (req, res) => {
   }
 });
 
-export { registerUser, loginUser, getUsers, getUser, updateUser, deleteUser };
+// Request Code
+const requestCode = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+
+  if (user) {
+    const code = OTPs[Math.floor(Math.random() * OTPs.length)];
+    user.resetCode = code;
+    await user.save();
+
+    await sendResetCode(email, code);
+
+    res.status(200).json({ message: "Code sent to your email" });
+  } else {
+    res.status(404).json({ message: "User not found" });
+  }
+});
+
+// Validate Code
+const validateCode = asyncHandler(async (req, res) => {
+  const { email, code } = req.body;
+
+  if (!OTPs.includes(code)) {
+    return res.status(400).json({ message: "Invalid code" });
+  }
+
+  const user = await User.findOne({ email });
+
+  if (user && OTPs.includes(code)) {
+    res.status(200).json({ message: "Code validated" });
+  } else {
+    res.status(400).json({ message: "Invalid code" });
+  }
+});
+
+// Reset Password
+const resetPassword = asyncHandler(async (req, res) => {
+  const { email, password, code } = req.body;
+
+  if (!OTPs.includes(code)) {
+    return res.status(400).json({ message: "Invalid code" });
+  }
+
+  const user = await User.findOne({ email });
+
+  if (user && OTPs.includes(code)) {
+    user.password = password;
+    await user.save();
+    res.status(200).json({ message: "Password reset successfully" });
+  } else {
+    res.status(400).json({ message: "Invalid code or email" });
+  }
+});
+
+export {
+  registerUser,
+  loginUser,
+  getUsers,
+  getUser,
+  updateUser,
+  deleteUser,
+  requestCode,
+  validateCode,
+  resetPassword,
+};

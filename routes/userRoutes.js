@@ -6,6 +6,9 @@ import {
   getUser,
   updateUser,
   deleteUser,
+  requestCode,
+  validateCode,
+  resetPassword,
 } from "../controllers/userController.js";
 import multer from "multer";
 import path from "path";
@@ -46,6 +49,9 @@ const router = express.Router();
 
 router.post("/register", upload, registerUser);
 router.post("/login", loginUser);
+router.post("/request-code", requestCode);
+router.post("/validate-code", validateCode);
+router.post("/reset-password", resetPassword);
 router.get("/", getUsers);
 router.get("/:id", getUser);
 router.put("/:id", upload, updateUser);
