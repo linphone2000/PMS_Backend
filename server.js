@@ -30,6 +30,20 @@ app.use("/api/inventory", inventoryRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/customers", customerRoutes);
 
+// Root route
+app.get("/", (req, res) => {
+  res.json({
+    message: "Welcome to the API",
+    data: {
+      users: [],
+      suppliers: [],
+      inventory: [],
+      orders: [],
+      customers: [],
+    },
+  });
+});
+
 // app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
